@@ -1,0 +1,12 @@
+include LICENSE
+include README.md
+include MANIFEST.in
+include requirements.txt
+
+recursive-include open_webui_extensions/manager/ui/templates *
+recursive-include open_webui_extensions/manager/ui/static *
+recursive-include docs *.md
+
+recursive-exclude __pycache__ *
+recursive-exclude *.py[cod] *
+recursive-exclude *.so *
