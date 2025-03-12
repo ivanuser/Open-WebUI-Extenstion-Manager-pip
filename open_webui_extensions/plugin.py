@@ -110,6 +110,7 @@ class OpenWebUIExtensionsPlugin:
                 
             # If all methods fail, try to inject into the frontend via middleware
             from fastapi.middleware.base import BaseHTTPMiddleware
+            from fastapi.responses import Response
             
             class AdminMenuMiddleware(BaseHTTPMiddleware):
                 async def dispatch(self, request, call_next):
@@ -158,6 +159,7 @@ class OpenWebUIExtensionsPlugin:
             if hasattr(self.app, "middleware"):
                 # Register pre-processing middleware for chat payloads
                 from fastapi.middleware.base import BaseHTTPMiddleware
+                from fastapi.responses import Response
                 
                 class ExtensionMiddleware(BaseHTTPMiddleware):
                     async def dispatch(self, request, call_next):
@@ -192,7 +194,6 @@ class OpenWebUIExtensionsPlugin:
                                 
                                 # If the hook modified the body, return a new response
                                 if modified_body and modified_body != body:
-                                    from fastapi.responses import Response
                                     return Response(
                                         content=modified_body,
                                         status_code=response.status_code,
@@ -201,7 +202,6 @@ class OpenWebUIExtensionsPlugin:
                                     )
                                 
                                 # Otherwise, rebuild the original response
-                                from fastapi.responses import Response
                                 return Response(
                                     content=body,
                                     status_code=response.status_code,
@@ -219,6 +219,9 @@ class OpenWebUIExtensionsPlugin:
             # 2. UI initialization hooks
             # This is harder to inject without direct file access, but we can try 
             # to inject into the frontend via response manipulation
+            from fastapi.middleware.base import BaseHTTPMiddleware
+            from fastapi.responses import Response
+            
             class UIHookMiddleware(BaseHTTPMiddleware):
                 async def dispatch(self, request, call_next):
                     response = await call_next(request)
@@ -288,7 +291,6 @@ class OpenWebUIExtensionsPlugin:
                         modified_content = content.replace("</body>", f"{extension_loader}</body>", 1)
                         
                         # Additionally, add mount points to key locations if they don't exist
-                        // Detect common UI areas and add mount points
                         if "<nav" in modified_content and not 'data-mount-point="sidebar"' in modified_content:
                             modified_content = modified_content.replace(
                                 "<nav", 
@@ -310,7 +312,6 @@ class OpenWebUIExtensionsPlugin:
                                 1
                             )
                         
-                        from fastapi.responses import Response
                         return Response(
                             content=modified_content.encode(),
                             status_code=response.status_code,

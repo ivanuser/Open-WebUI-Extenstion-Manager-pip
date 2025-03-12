@@ -3,6 +3,7 @@ Decorators for extension features.
 """
 
 import functools
+import inspect
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 def hook(hook_name: str) -> Callable:
@@ -26,7 +27,6 @@ def hook(hook_name: str) -> Callable:
         if not hasattr(wrapper, "_hook"):
             wrapper._hook = hook_name
         
-        # The wrapper function needs to be modified when the class is instantiated
         return wrapper
     
     return decorator
@@ -154,3 +154,34 @@ def setting(name: str, default: Any = None, type_: Optional[Type] = None,
         return cls
     
     return decorator
+
+def register_hooks_from_instance(instance: Any) -> None:
+    """Register hooks from an extension instance.
+    
+    This function looks for methods in the instance that have been
+    decorated with the @hook decorator and registers them as callbacks
+    for the corresponding hooks.
+    
+    Args:
+        instance: The extension instance.
+    """
+    # Import here to avoid circular imports
+    from .hooks import register_callback
+    
+    # Skip if the instance is None
+    if instance is None:
+        return
+    
+    # Find all methods in the instance
+    for name, method in inspect.getmembers(instance, inspect.ismethod):
+        # Check if the method has the _hook attribute
+        if hasattr(method, "_hook"):
+            hook_name = method._hook
+            register_callback(hook_name, method)
+    
+    # Also check for hooks defined in the instance's _hooks attribute
+    if hasattr(instance, "_hooks") and isinstance(instance._hooks, dict):
+        for hook_name, method_name in instance._hooks.items():
+            method = getattr(instance, method_name, None)
+            if method is not None and callable(method):
+                register_callback(hook_name, method)
