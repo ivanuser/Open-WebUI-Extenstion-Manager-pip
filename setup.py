@@ -23,6 +23,7 @@ setup(
             "webui-extensions=open_webui_extensions.cli:main",
             "webui-extensions-install=open_webui_extensions.install_openwebui:main",
             "webui-extensions-patch=open_webui_extensions.patch_openwebui:main",
+            "webui-extensions-manual-patch=open_webui_extensions.manual_patch:main",
         ],
     },
     classifiers=[
