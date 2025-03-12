@@ -14,9 +14,9 @@ from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .extension_system.registry import initialize_registry
-from .manager.api import create_router
-from .manager.ui import register_ui_routes
+from open_webui_extensions.extension_system.registry import initialize_registry
+from open_webui_extensions.manager.api import create_router
+from open_webui_extensions.manager.ui import register_ui_routes
 
 logger = logging.getLogger("webui-extensions.dev-server")
 
@@ -199,7 +199,7 @@ def create_dev_app() -> FastAPI:
         return HTMLResponse(content=html)
     
     # Execute the UI init hook to notify extensions
-    from .extension_system.hooks import execute_hook
+    from open_webui_extensions.extension_system.hooks import execute_hook
     import asyncio
     
     @app.on_event("startup")

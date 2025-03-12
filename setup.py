@@ -21,9 +21,8 @@ setup(
     entry_points={
         "console_scripts": [
             "webui-extensions=open_webui_extensions.cli:main",
-        ],
-        "openwebui.plugins": [
-            "extensions=open_webui_extensions.plugin:OpenWebUIExtensionsPlugin",
+            "webui-extensions-install=open_webui_extensions.install_openwebui:main",
+            "webui-extensions-patch=open_webui_extensions.patch_openwebui:main",
         ],
     },
     classifiers=[

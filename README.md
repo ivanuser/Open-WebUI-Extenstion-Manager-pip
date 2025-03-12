@@ -28,7 +28,54 @@ pip install open-webui-extensions
 pip install git+https://github.com/open-webui/open-webui-extensions.git
 ```
 
-## Usage
+## Integrating with Open WebUI
+
+There are several ways to integrate the extension system with your Open WebUI installation:
+
+### Method 1: Automatic Installation
+
+Run the automated installer script:
+
+```bash
+webui-extensions-install
+```
+
+This script will try to find your Open WebUI installation and integrate the extension system automatically.
+
+### Method 2: Patching Open WebUI
+
+Use the patching script to modify your Open WebUI installation:
+
+```bash
+webui-extensions-patch
+```
+
+This script will find your Open WebUI main.py file, create a backup, and patch it to include the extension system.
+
+### Method 3: Manual Integration
+
+1. Find your Open WebUI's main.py file
+2. Add the following lines:
+
+```python
+# Add at the top with other imports
+from open_webui_extensions.plugin import initialize_extension_system
+
+# Add after the FastAPI app is created (app = FastAPI(...))
+app = initialize_extension_system(app)
+```
+
+### Method 4: Development Mode
+
+For development or testing, you can run the extension system as a separate server:
+
+```bash
+python -m open_webui_extensions.dev_server
+```
+
+Then access the extension manager at http://localhost:5000/admin/extensions
+
+## Using the Extension System
 
 ### Web Interface
 
@@ -145,31 +192,9 @@ class HelloWorldExtension(UIExtension):
 extension = HelloWorldExtension()
 ```
 
-### Development Server
+For more detailed examples and advanced extension development, see the [documentation](docs/creating_extensions.md).
 
-The extension system provides a development server for testing extensions:
-
-```bash
-# Run the development server
-python -m open_webui_extensions.dev_server
-
-# Run with custom host and port
-python -m open_webui_extensions.dev_server --host 0.0.0.0 --port 8000
-```
-
-This starts a server with a mock Open WebUI interface where you can test your extension.
-
-### Extension Decorators
-
-The following decorators are available for adding functionality to your extensions:
-
-- `@hook(hook_name)`: Register a method as a hook callback
-- `@ui_component(component_id, mount_points)`: Register a method as a UI component renderer
-- `@api_route(path, methods)`: Register a method as an API route handler
-- `@tool(tool_id)`: Register a method as a tool
-- `@setting(name, default, type_, options, description)`: Register a setting for an extension
-
-### Hook Points
+## Hook Points
 
 The following hook points are available:
 
@@ -189,6 +214,29 @@ The following mount points are available for UI components:
 - `chat`: The chat interface
 - `main`: The main content area
 - `footer`: The footer area
+
+## Troubleshooting
+
+### Extension System Not Appearing in Open WebUI
+
+If the extension manager doesn't appear in Open WebUI after installation:
+
+1. Check that you've restarted Open WebUI after installing the extension system
+2. Try accessing the extension manager directly at `/admin/extensions`
+3. Check the Open WebUI logs for any errors related to extension loading
+4. Try running the extension system in development mode and access it at http://localhost:5000/admin/extensions
+
+### Issues Installing Extensions
+
+If you're having trouble installing or running extensions:
+
+1. Make sure you've set up the extension system with `webui-extensions setup`
+2. Check that the extension directory exists at `~/.openwebui/extensions`
+3. Try installing an example extension with the full path:
+   ```bash
+   webui-extensions install /path/to/open-webui-extensions/example_extensions/hello_world
+   ```
+4. Check the logs for any errors during extension loading
 
 ## License
 
