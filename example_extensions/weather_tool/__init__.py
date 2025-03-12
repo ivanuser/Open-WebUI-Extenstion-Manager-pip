@@ -8,23 +8,43 @@ both UI components and API endpoints.
 import logging
 from typing import Dict, List, Any
 
-from open_webui_extensions import (
-    ToolExtension,
-    hook,
-    ui_component,
-    api_route,
-    tool,
-    setting,
-)
+# Import the necessary classes and decorators
+try:
+    from open_webui_extensions import (
+        ToolExtension,
+        hook,
+        ui_component,
+        api_route,
+        tool,
+        setting,
+    )
+except ImportError:
+    # Fallback for development
+    print("Warning: Couldn't import from open_webui_extensions package")
+    # Create dummy classes for development
+    class ToolExtension:
+        pass
+    def hook(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def ui_component(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def api_route(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def tool(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def setting(*args, **kwargs):
+        def decorator(cls): return cls
+        return decorator
 
 logger = logging.getLogger("weather-tool-extension")
 
 @setting(name="api_key", default="", description="Your weather API key (demo mode if empty)")
 @setting(name="default_location", default="London", description="Default location for weather lookups")
-@setting(name="temperature_unit", default="metric", options=[
-    {"label": "Celsius (Metric)", "value": "metric"},
-    {"label": "Fahrenheit (Imperial)", "value": "imperial"}
-], description="Temperature unit")
+@setting(name="temperature_unit", default="metric", description="Temperature unit")
 class WeatherToolExtension(ToolExtension):
     """A weather tool extension."""
     
@@ -179,24 +199,24 @@ class WeatherToolExtension(ToolExtension):
         mock_data = {
             "london": {
                 "temperature": 15,
-                "description": "Cloudy with a chance of rain",
+                "description": "Cloudy with a chance of rain"
             },
             "new york": {
                 "temperature": 22,
-                "description": "Sunny with scattered clouds",
+                "description": "Sunny with scattered clouds"
             },
             "tokyo": {
                 "temperature": 26,
-                "description": "Clear skies",
+                "description": "Clear skies"
             },
             "sydney": {
                 "temperature": 20,
-                "description": "Partly cloudy",
+                "description": "Partly cloudy"
             },
             "paris": {
                 "temperature": 18,
-                "description": "Light rain",
-            },
+                "description": "Light rain"
+            }
         }
         
         # If we have mock data for this city, use it
@@ -212,7 +232,7 @@ class WeatherToolExtension(ToolExtension):
             ]
             data = {
                 "temperature": temp_base,
-                "description": random.choice(descriptions),
+                "description": random.choice(descriptions)
             }
         
         # Convert temperature if needed
