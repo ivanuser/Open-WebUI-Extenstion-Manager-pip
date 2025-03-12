@@ -65,19 +65,19 @@ class OpenWebUIExtensionsPlugin:
             self.app.include_router(router, prefix="/api/extensions", tags=["extensions"])
             
             # Register UI routes
+            from fastapi.responses import HTMLResponse
+            
             @self.app.get("/admin/extensions")
             async def get_extensions_manager():
                 from open_webui_extensions.manager.ui import render_extensions_page
-                from fastapi.responses import HTMLResponse
                 return HTMLResponse(render_extensions_page())
             
             @self.app.get("/admin/extensions/{name}")
             async def get_extension_detail(name: str):
                 from open_webui_extensions.manager.ui import render_extension_detail_page
-                from fastapi.responses import HTMLResponse
                 return HTMLResponse(render_extension_detail_page(name))
             
-            # Add extension manager to admin menu (for backward compatibility)
+            # Add extension manager to admin menu
             self._add_to_admin_menu()
             
             # Initialize extensions
@@ -99,12 +99,26 @@ class OpenWebUIExtensionsPlugin:
         try:
             # Try to add to admin menu state if exists
             if hasattr(self.app, "state") and hasattr(self.app.state, "admin_menu"):
+                # Check if the menu already has an Extensions item
+                for item in self.app.state.admin_menu:
+                    if isinstance(item, dict) and item.get("name") == "Extensions":
+                        logger.info("Extensions menu item already exists")
+                        return
+                        
+                # Add the menu item
                 self.app.state.admin_menu.append({
                     "name": "Extensions",
                     "icon": "puzzle-piece", 
                     "url": "/admin/extensions"
                 })
                 logger.info("Added Extensions to admin menu in app.state.admin_menu")
+                
+            # Print the current admin menu items for debugging
+            if hasattr(self.app, "state") and hasattr(self.app.state, "admin_menu"):
+                menu_items = [item.get("name") if isinstance(item, dict) else str(item) 
+                             for item in self.app.state.admin_menu]
+                logger.info(f"Current admin menu items: {menu_items}")
+                
         except Exception as e:
             logger.error(f"Error adding Extensions to admin menu: {e}")
     

@@ -20,6 +20,8 @@ def create_router(registry: ExtensionRegistry) -> APIRouter:
     """
     router = APIRouter()
     
+    # Handle root endpoint both with and without trailing slash
+    @router.get("")
     @router.get("/")
     async def list_extensions():
         """List all extensions."""
@@ -252,22 +254,5 @@ def create_router(registry: ExtensionRegistry) -> APIRouter:
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-    
-    # Add routes from extensions
-    for ext_info in registry.list_extensions():
-        if not ext_info.active:
-            continue
-        
-        # Get the extension instance
-        extension = registry.get_extension_instance(ext_info.name)
-        
-        # Skip non-API extensions or extensions without routes
-        if not extension or extension.type != "api" or not hasattr(extension, "routes"):
-            continue
-        
-        # Add each route
-        for route in extension.routes:
-            # TODO: Add routes from extensions
-            pass
-    
+            
     return router
