@@ -5,8 +5,8 @@ API endpoints for the extension manager.
 from fastapi import APIRouter, HTTPException, Depends, Query, Body, Request
 from typing import Any, Dict, List, Optional
 
-from ..extension_system.registry import ExtensionRegistry
-from ..extension_system.hooks import execute_hook
+from open_webui_extensions.extension_system.registry import ExtensionRegistry
+from open_webui_extensions.extension_system.hooks import execute_hook
 
 
 def create_router(registry: ExtensionRegistry) -> APIRouter:

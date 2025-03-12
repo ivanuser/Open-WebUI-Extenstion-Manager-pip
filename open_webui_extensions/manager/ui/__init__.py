@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from fastapi.responses import HTMLResponse
 
 # Get the directory of this file
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,13 +28,11 @@ def register_ui_routes(app):
     @app.get("/admin/extensions")
     async def get_extensions_manager():
         """Render the extensions manager page."""
-        from fastapi.responses import HTMLResponse
         return HTMLResponse(render_extensions_page())
     
     @app.get("/admin/extensions/{name}")
     async def get_extension_detail(name: str):
         """Render the extension detail page."""
-        from fastapi.responses import HTMLResponse
         return HTMLResponse(render_extension_detail_page(name))
 
 
@@ -43,7 +42,8 @@ def render_extensions_page() -> str:
     Returns:
         The HTML content of the extensions manager page.
     """
-    from ..extension_system.registry import get_registry
+    # Use absolute import instead of relative
+    from open_webui_extensions.extension_system.registry import get_registry
     
     # Get the extension registry
     registry = get_registry()
@@ -65,7 +65,8 @@ def render_extension_detail_page(name: str) -> str:
     Returns:
         The HTML content of the extension detail page.
     """
-    from ..extension_system.registry import get_registry
+    # Use absolute import instead of relative
+    from open_webui_extensions.extension_system.registry import get_registry
     
     # Get the extension registry
     registry = get_registry()
