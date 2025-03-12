@@ -64,18 +64,82 @@ class OpenWebUIExtensionsPlugin:
             router = create_router(registry)
             self.app.include_router(router, prefix="/api/extensions", tags=["extensions"])
             
-            # Register UI routes
-            from fastapi.responses import HTMLResponse
+            # Register direct UI routes that bypass the frontend router
+            from fastapi.responses import HTMLResponse, RedirectResponse
             
-            @self.app.get("/admin/extensions")
+            @self.app.get("/ext-manager")
             async def get_extensions_manager():
                 from open_webui_extensions.manager.ui import render_extensions_page
                 return HTMLResponse(render_extensions_page())
             
-            @self.app.get("/admin/extensions/{name}")
+            @self.app.get("/ext-manager/{name}")
             async def get_extension_detail(name: str):
                 from open_webui_extensions.manager.ui import render_extension_detail_page
                 return HTMLResponse(render_extension_detail_page(name))
+            
+            # Create a special debug route
+            @self.app.get("/ext-debug")
+            async def extension_debug():
+                try:
+                    # Check if admin menu contains the extension entry
+                    admin_menu = []
+                    if hasattr(self.app.state, "admin_menu"):
+                        admin_menu = self.app.state.admin_menu
+                    
+                    # List extension API routes
+                    routes = []
+                    for route in self.app.routes:
+                        if "/api/extensions" in route.path or "/ext-" in route.path:
+                            routes.append(f"{route.methods} {route.path}")
+                    
+                    # Check registry status
+                    from open_webui_extensions.extension_system.registry import get_registry
+                    extensions = get_registry().list_extensions()
+                    
+                    # Create a debug page
+                    html = f"""
+                    <html>
+                    <head>
+                        <title>Extension System Debug</title>
+                        <style>
+                            body {{ font-family: system-ui, sans-serif; line-height: 1.5; padding: 2rem; }}
+                            h1, h2 {{ color: #0066cc; }}
+                            pre {{ background: #f5f5f5; padding: 1rem; overflow: auto; }}
+                            .card {{ border: 1px solid #ddd; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; }}
+                            .success {{ color: green; }}
+                            .error {{ color: red; }}
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Extension System Debug</h1>
+                        
+                        <h2>Direct Extension Links</h2>
+                        <p>These links bypass Open WebUI's frontend router:</p>
+                        <ul>
+                            <li><a href="/ext-manager" target="_blank">Extension Manager</a></li>
+                            <li><a href="/api/extensions" target="_blank">Extensions API</a></li>
+                        </ul>
+                        
+                        <h2>Admin Menu Items</h2>
+                        <pre>{admin_menu}</pre>
+                        
+                        <h2>Extension Routes</h2>
+                        <pre>{routes}</pre>
+                        
+                        <h2>Installed Extensions</h2>
+                        <div>
+                            {"".join([f'<div class="card"><h3>{ext.name}</h3><p>Version: {ext.version}</p><p>Status: {"Active" if ext.active else "Inactive"}</p><p>{ext.description}</p></div>' for ext in extensions])}
+                        </div>
+                        
+                        <h2>Extension System Status</h2>
+                        <pre>Plugin initialized: {self.initialized}</pre>
+                    </body>
+                    </html>
+                    """
+                    return HTMLResponse(content=html)
+                except Exception as e:
+                    logger.error(f"Error in debug page: {e}")
+                    return HTMLResponse(f"<html><body><h1>Error</h1><p>{e}</p></body></html>")
             
             # Add extension manager to admin menu
             self._add_to_admin_menu()
@@ -105,11 +169,11 @@ class OpenWebUIExtensionsPlugin:
                         logger.info("Extensions menu item already exists")
                         return
                         
-                # Add the menu item
+                # Add the menu item - point to our direct route instead of admin/extensions
                 self.app.state.admin_menu.append({
                     "name": "Extensions",
                     "icon": "puzzle-piece", 
-                    "url": "/admin/extensions"
+                    "url": "/ext-manager"  # Use our direct route
                 })
                 logger.info("Added Extensions to admin menu in app.state.admin_menu")
                 
