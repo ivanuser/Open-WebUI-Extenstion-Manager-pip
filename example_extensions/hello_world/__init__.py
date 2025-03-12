@@ -8,12 +8,30 @@ and functionality of Open WebUI extensions.
 import logging
 from typing import Dict, List, Any
 
-from open_webui_extensions import (
-    UIExtension,
-    hook,
-    ui_component,
-    setting,
-)
+# Import the necessary classes and decorators
+# Note: These imports may need adjustment based on your final package structure
+try:
+    from open_webui_extensions import (
+        UIExtension,
+        hook,
+        ui_component,
+        setting,
+    )
+except ImportError:
+    # Fallback for development
+    print("Warning: Couldn't import from open_webui_extensions package")
+    # Create dummy classes for development
+    class UIExtension:
+        pass
+    def hook(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def ui_component(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    def setting(*args, **kwargs):
+        def decorator(cls): return cls
+        return decorator
 
 logger = logging.getLogger("hello-world-extension")
 
@@ -96,12 +114,6 @@ class HelloWorldExtension(UIExtension):
     def on_ui_init(self) -> None:
         """Hook called when the UI is initialized."""
         logger.info("UI initialized - Hello World extension is ready!")
-    
-    @hook("model_before_generate")
-    def on_model_before_generate(self, prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Hook called before generating text."""
-        logger.info(f"Processing prompt: {prompt[:50]}...")
-        return params
 
 # Create an instance of the extension
 extension = HelloWorldExtension()
