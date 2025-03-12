@@ -2,10 +2,11 @@
 API endpoints for the extension manager.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, HTTPException, Depends, Query, Body, Request
 from typing import Any, Dict, List, Optional
 
 from ..extension_system.registry import ExtensionRegistry
+from ..extension_system.hooks import execute_hook
 
 
 def create_router(registry: ExtensionRegistry) -> APIRouter:
@@ -180,5 +181,93 @@ def create_router(registry: ExtensionRegistry) -> APIRouter:
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+    
+    @router.get("/ui-components")
+    async def get_ui_components():
+        """Get UI components from all extensions."""
+        try:
+            # Organize components by mount point
+            mount_points = {}
+            
+            # Get all active extensions
+            extensions = [ext for ext in registry.list_extensions() if ext.active]
+            
+            for ext_info in extensions:
+                # Get the extension instance
+                extension = registry.get_extension_instance(ext_info.name)
+                
+                # Skip non-UI extensions
+                if not extension or extension.type != "ui":
+                    continue
+                
+                # Get the mount points and components
+                if hasattr(extension, "mount_points") and hasattr(extension, "components"):
+                    for mount_point, components in extension.mount_points.items():
+                        if mount_point not in mount_points:
+                            mount_points[mount_point] = []
+                        
+                        for component_id in components:
+                            if component_id in extension.components:
+                                # Get the component renderer function
+                                renderer = extension.components[component_id]
+                                
+                                # Try to render the component
+                                try:
+                                    if callable(renderer):
+                                        component_data = renderer()
+                                        
+                                        # If the renderer returns a dictionary with HTML, add it
+                                        if isinstance(component_data, dict) and "html" in component_data:
+                                            mount_points[mount_point].append({
+                                                "id": component_id,
+                                                "extension": ext_info.name,
+                                                "html": component_data["html"],
+                                            })
+                                except Exception as e:
+                                    # Log error but continue with other components
+                                    print(f"Error rendering component {component_id} from {ext_info.name}: {e}")
+            
+            return {
+                "success": True,
+                "components": mount_points,
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @router.post("/hooks/{hook_name}")
+    async def execute_hook_endpoint(hook_name: str, request: Request):
+        """Execute a hook."""
+        try:
+            # Get request body if any
+            body = await request.body()
+            data = body if body else None
+            
+            # Execute the hook
+            result = await execute_hook(hook_name, data)
+            
+            return {
+                "success": True,
+                "hook": hook_name,
+                "result": result if result is not None else "Hook executed",
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # Add routes from extensions
+    for ext_info in registry.list_extensions():
+        if not ext_info.active:
+            continue
+        
+        # Get the extension instance
+        extension = registry.get_extension_instance(ext_info.name)
+        
+        # Skip non-API extensions or extensions without routes
+        if not extension or extension.type != "api" or not hasattr(extension, "routes"):
+            continue
+        
+        # Add each route
+        for route in extension.routes:
+            # TODO: Add routes from extensions
+            pass
     
     return router

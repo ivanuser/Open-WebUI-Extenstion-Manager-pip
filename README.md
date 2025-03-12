@@ -1,61 +1,101 @@
-# Open WebUI Extensions
+# Open WebUI Extension System
 
-A comprehensive extension system for pip-installed Open WebUI.
-
-## Overview
-
-Open WebUI Extensions provides a framework for developing, installing, and managing extensions for Open WebUI. The system is specifically designed to work with pip-installed instances of Open WebUI, making it easy to enhance Open WebUI without modifying its core code.
+An extension system for pip-installed Open WebUI that enables developers to create, install, and manage extensions.
 
 ## Features
 
-- **Extension Manager**: Admin interface for managing extensions
-- **Extension Framework**: Core libraries and interfaces for extension development
+- **Extension Framework**: A robust framework for developing extensions
+- **Extension Manager**: Web-based interface for managing extensions
 - **Extension Registry**: System for discovering and loading extensions
-- **Command-line Tools**: Tools for managing extensions from the command line
-- **Example Extensions**: Example extensions to get you started
+- **Extension API**: Standard interfaces for extensions to integrate with Open WebUI
 
 ## Installation
+
+### Prerequisites
+
+- Open WebUI installed via pip
+- Python 3.9 or higher
+
+### Install from PyPI
 
 ```bash
 pip install open-webui-extensions
 ```
 
-After installation, you can set up the extension system:
+### Install from GitHub
 
 ```bash
-webui-extensions setup
+pip install git+https://github.com/open-webui/open-webui-extensions.git
 ```
 
-## Using Extensions
+## Usage
 
-Once the extension system is set up, you can:
+### Web Interface
 
-1. **Install extensions** from various sources:
-   ```bash
-   webui-extensions install https://example.com/extension.zip
-   ```
+After installation, you can access the extension manager at `/admin/extensions` in your Open WebUI instance.
 
-2. **Enable and disable extensions**:
-   ```bash
-   webui-extensions enable extension-name
-   webui-extensions disable extension-name
-   ```
+### Command Line
 
-3. **View installed extensions**:
-   ```bash
-   webui-extensions list
-   ```
+The extension system provides a command-line interface for managing extensions:
 
-4. **Access the web-based Extension Manager** at `/admin/extensions` in your Open WebUI instance
+```bash
+# Set up the extension system
+webui-extensions setup
 
-## Creating Extensions
+# List installed extensions
+webui-extensions list
 
-Creating extensions is simple. Here's a minimal example:
+# Install an extension
+webui-extensions install /path/to/extension
+
+# Enable an extension
+webui-extensions enable extension-name
+
+# Disable an extension
+webui-extensions disable extension-name
+
+# Show extension information
+webui-extensions info extension-name
+
+# Uninstall an extension
+webui-extensions uninstall extension-name
+```
+
+## Developing Extensions
+
+### Extension Structure
+
+A basic extension consists of a Python module or package with the following structure:
+
+```
+hello_world/
+├── __init__.py  # Main extension file
+└── static/      # Optional static files
+```
+
+The main extension file (`__init__.py`) should define a class that inherits from one of the base extension classes and creates an instance of that class.
+
+### Base Extension Classes
+
+The extension system provides several base classes for different types of extensions:
+
+- `Extension`: Base class for all extensions
+- `UIExtension`: Extensions that add UI components
+- `APIExtension`: Extensions that add API endpoints
+- `ModelExtension`: Extensions that add new AI models
+- `ToolExtension`: Extensions that add new tools or capabilities
+- `ThemeExtension`: Extensions that customize the appearance
+
+### Example Extension
+
+Here's a simple UI extension example:
 
 ```python
-from open_webui_extensions import Extension
+from open_webui_extensions import UIExtension, ui_component, hook
 
-class HelloWorldExtension(Extension):
+class HelloWorldExtension(UIExtension):
+    """A simple Hello World extension."""
+    
     @property
     def name(self) -> str:
         return "hello-world"
@@ -66,51 +106,89 @@ class HelloWorldExtension(Extension):
     
     @property
     def description(self) -> str:
-        return "A simple Hello World extension."
+        return "A simple Hello World extension for Open WebUI."
     
     @property
     def author(self) -> str:
-        return "Your Name"
+        return "Open WebUI Team"
     
-    def initialize(self, context: Dict[str, Any]) -> bool:
-        return True
+    @property
+    def components(self) -> dict:
+        return {
+            "hello_sidebar": self.render_sidebar,
+        }
     
-    def activate(self) -> bool:
-        return True
+    @property
+    def mount_points(self) -> dict:
+        return {
+            "sidebar": ["hello_sidebar"],
+        }
     
-    def deactivate(self) -> bool:
-        return True
+    @ui_component("hello_sidebar")
+    def render_sidebar(self):
+        """Render the sidebar component."""
+        return {
+            "html": """
+            <div style="padding: 1rem; text-align: center;">
+                <h3>Hello from Open WebUI Extensions!</h3>
+                <p>This component is rendered in the sidebar.</p>
+            </div>
+            """
+        }
+    
+    @hook("ui_init")
+    def on_ui_init(self):
+        """Hook called when the UI is initialized."""
+        print("UI initialized - Hello World extension is ready!")
 
 # Create an instance of the extension
 extension = HelloWorldExtension()
 ```
 
-For more detailed examples, see the [example_extensions](example_extensions) directory.
+### Development Server
 
-## Documentation
+The extension system provides a development server for testing extensions:
 
-- [Getting Started](docs/getting_started.md): Getting started with the extension system
-- [Creating Extensions](docs/creating_extensions.md): How to create extensions
-- [API Reference](docs/api_reference.md): Detailed API documentation
+```bash
+# Run the development server
+python -m open_webui_extensions.dev_server
 
-## Extension Types
+# Run with custom host and port
+python -m open_webui_extensions.dev_server --host 0.0.0.0 --port 8000
+```
 
-Open WebUI Extensions supports several types of extensions:
+This starts a server with a mock Open WebUI interface where you can test your extension.
 
-- **UI Extensions**: Add new UI components to Open WebUI
-- **API Extensions**: Add new API endpoints
-- **Model Extensions**: Integrate new AI models
-- **Tool Extensions**: Add new tools or capabilities
-- **Theme Extensions**: Customize the appearance
+### Extension Decorators
 
-## Community and Support
+The following decorators are available for adding functionality to your extensions:
 
-- **GitHub Issues**: For bug reports and feature requests
-- **Discussions**: For questions and general discussion
+- `@hook(hook_name)`: Register a method as a hook callback
+- `@ui_component(component_id, mount_points)`: Register a method as a UI component renderer
+- `@api_route(path, methods)`: Register a method as an API route handler
+- `@tool(tool_id)`: Register a method as a tool
+- `@setting(name, default, type_, options, description)`: Register a setting for an extension
 
-## Contributing
+### Hook Points
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+The following hook points are available:
+
+- `ui_init`: Called when the UI is initialized
+- `model_before_generate`: Called before generating text
+- `model_after_generate`: Called after generating text
+- `chat_pre_process`: Called before processing a chat request
+- `chat_post_process`: Called after processing a chat response
+- `extension_loaded`: Called when an extension is loaded
+- `extension_unloaded`: Called when an extension is unloaded
+
+## Mount Points
+
+The following mount points are available for UI components:
+
+- `sidebar`: The sidebar panel
+- `chat`: The chat interface
+- `main`: The main content area
+- `footer`: The footer area
 
 ## License
 

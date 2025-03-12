@@ -33,4 +33,10 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     python_requires=">=3.9",
+    package_data={
+        "open_webui_extensions": [
+            "manager/ui/templates/*.html",
+            "manager/ui/static/**/*",
+        ],
+    },
 )

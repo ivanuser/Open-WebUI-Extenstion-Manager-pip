@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Open WebUI Extensions{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        /* Custom styles */
+        .theme-dark {
+            color-scheme: dark;
+            --background: #343541;
+            --foreground: #f2f2f2;
+            --card-background: #444654;
+            --button-bg: #3e3f4b;
+            --button-hover: #5e5f6b;
+            --border-color: #565869;
+            --success: #19c37d;
+            --error: #ef4146;
+        }
+        
+        .theme-light {
+            color-scheme: light;
+            --background: #ffffff;
+            --foreground: #1f2937;
+            --card-background: #f9fafb;
+            --button-bg: #e5e7eb;
+            --button-hover: #d1d5db;
+            --border-color: #e5e7eb;
+            --success: #10a37f;
+            --error: #ef4146;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        
+        .card {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+        }
+        
+        .btn {
+            background-color: var(--button-bg);
+            color: var(--foreground);
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-error {
+            background-color: var(--error);
+            color: white;
+        }
+        
+        .form-input, .form-select {
+            background-color: var(--card-background);
+            color: var(--foreground);
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+        }
+        
+        /* For extension cards */
+        .extension-card {
+            transition: transform 0.2s;
+        }
+        
+        .extension-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Loading spinner */
+        .loading {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid var(--foreground);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Check for dark mode preference
+        function setTheme() {
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.body.classList.add(isDarkMode ? 'theme-dark' : 'theme-light');
+        }
+        
+        // Set theme on load
+        document.addEventListener('DOMContentLoaded', setTheme);
+        
+        // Update theme when preference changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setTheme);
+    </script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="container mx-auto px-4 py-6">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold">Open WebUI Extensions</h1>
+            </div>
+            <div>
+                <a href="/" class="btn mr-2">Home</a>
+                <a href="/admin/extensions" class="btn">Extensions Manager</a>
+            </div>
+        </header>
+        
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        
+        <footer class="mt-12 text-center text-sm opacity-70">
+            <p>Open WebUI Extension System • v0.1.0</p>
+        </footer>
+    </div>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

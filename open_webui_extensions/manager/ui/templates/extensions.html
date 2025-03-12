@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Extensions Manager - Open WebUI{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-xl font-semibold mb-4">Installed Extensions</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for extension in extensions %}
+        <div class="extension-card card p-4 flex flex-col">
+            <div class="flex justify-between items-start mb-2">
+                <h3 class="font-medium text-lg">{{ extension.name }}</h3>
+                <span class="text-xs px-2 py-1 rounded-full {% if extension.active %}bg-green-500 text-white{% else %}bg-gray-500 text-white{% endif %}">
+                    {{ "Active" if extension.active else "Inactive" }}
+                </span>
+            </div>
+            <p class="text-sm opacity-70 mb-2">{{ extension.description }}</p>
+            <div class="text-xs opacity-70 mb-4">
+                <div>Version: {{ extension.version }}</div>
+                <div>Author: {{ extension.author }}</div>
+                <div>Type: {{ extension.type }}</div>
+            </div>
+            <div class="mt-auto flex space-x-2">
+                <a href="/admin/extensions/{{ extension.name }}" class="btn flex-1 text-center">Details</a>
+                <button 
+                    class="btn flex-1 {% if extension.active %}btn-error{% else %}btn-success{% endif %}" 
+                    data-action="{{ 'disable' if extension.active else 'enable' }}"
+                    data-name="{{ extension.name }}"
+                    onclick="toggleExtension(this)">
+                    {{ "Disable" if extension.active else "Enable" }}
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-3 card p-6 text-center">
+            <p class="mb-4">No extensions installed yet.</p>
+            <p class="text-sm opacity-70">Install extensions using the form below or via the CLI.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="mb-8">
+    <h2 class="text-xl font-semibold mb-4">Install Extension</h2>
+    <div class="card p-6">
+        <form id="install-form" class="space-y-4">
+            <div>
+                <label for="source" class="block text-sm font-medium mb-1">Extension Source</label>
+                <input type="text" id="source" name="source" class="form-input" 
+                       placeholder="URL, ZIP file path, or directory path">
+                <p class="text-xs opacity-70 mt-1">
+                    Enter a URL to an extension repository, a path to a ZIP file, or a path to a directory.
+                </p>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-success">Install Extension</button>
+                <span id="install-status" class="ml-2"></span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mb-8">
+    <h2 class="text-xl font-semibold mb-4">Manage Extensions</h2>
+    <div class="card p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <button id="discover-btn" class="btn w-full">Discover Extensions</button>
+                <p class="text-xs opacity-70 mt-1">
+                    Scan the extensions directory for new or updated extensions.
+                </p>
+            </div>
+            <div>
+                <button id="initialize-btn" class="btn w-full">Initialize All Extensions</button>
+                <p class="text-xs opacity-70 mt-1">
+                    Initialize all active extensions. Useful after making changes.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle extension (enable/disable)
+    async function toggleExtension(button) {
+        const action = button.dataset.action;
+        const name = button.dataset.name;
+        const originalText = button.textContent.trim();
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="loading mr-2"></span> Processing...';
+        
+        try {
+            const response = await fetch(`/api/extensions/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Refresh the page to show updated state
+                window.location.reload();
+            } else {
+                alert(`Error: ${data.message}`);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    }
+    
+    // Install extension
+    document.getElementById('install-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const sourceInput = document.getElementById('source');
+        const statusEl = document.getElementById('install-status');
+        const submitButton = event.submitter;
+        
+        if (!sourceInput.value.trim()) {
+            statusEl.textContent = 'Please enter a source.';
+            return;
+        }
+        
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="loading mr-2"></span> Installing...';
+        statusEl.textContent = '';
+        
+        try {
+            const response = await fetch('/api/extensions/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ source: sourceInput.value.trim() })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                statusEl.textContent = 'Extension installed successfully!';
+                // Refresh after a short delay
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                statusEl.textContent = `Error: ${data.message}`;
+                submitButton.textContent = 'Install Extension';
+                submitButton.disabled = false;
+            }
+        } catch (error) {
+            statusEl.textContent = `Error: ${error.message}`;
+            submitButton.textContent = 'Install Extension';
+            submitButton.disabled = false;
+        }
+    });
+    
+    // Discover extensions
+    document.getElementById('discover-btn').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const originalText = button.textContent.trim();
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="loading mr-2"></span> Discovering...';
+        
+        try {
+            const response = await fetch('/api/extensions/discover', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                button.textContent = `Found ${data.extensions.length} extensions`;
+                // Refresh after a short delay
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(`Error: ${data.message}`);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    });
+    
+    // Initialize all extensions
+    document.getElementById('initialize-btn').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const originalText = button.textContent.trim();
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="loading mr-2"></span> Initializing...';
+        
+        try {
+            const response = await fetch('/api/extensions/initialize', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                button.textContent = 'All extensions initialized!';
+                // Refresh after a short delay
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(`Error: ${data.message}`);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}{{ extension_info.name }} - Extension Details{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/admin/extensions" class="btn flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+        </svg>
+        Back to Extensions
+    </a>
+</div>
+
+<div class="card p-6 mb-8">
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <h1 class="text-2xl font-bold">{{ extension_info.name }}</h1>
+            <p class="text-sm opacity-70">{{ extension_info.description }}</p>
+        </div>
+        <span class="text-sm px-3 py-1 rounded-full {% if extension_info.active %}bg-green-500 text-white{% else %}bg-gray-500 text-white{% endif %}">
+            {{ "Active" if extension_info.active else "Inactive" }}
+        </span>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <h3 class="text-sm font-medium mb-2">Extension Information</h3>
+            <div class="space-y-2">
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Version:</span>
+                    <span class="text-sm">{{ extension_info.version }}</span>
+                </div>
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Author:</span>
+                    <span class="text-sm">{{ extension_info.author }}</span>
+                </div>
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Type:</span>
+                    <span class="text-sm">{{ extension_info.type }}</span>
+                </div>
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Installed:</span>
+                    <span class="text-sm">{{ extension_info.install_date }}</span>
+                </div>
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Updated:</span>
+                    <span class="text-sm">{{ extension_info.update_date }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-sm font-medium mb-2">Path & Dependencies</h3>
+            <div class="space-y-2">
+                <div class="flex">
+                    <span class="w-24 text-sm opacity-70">Path:</span>
+                    <span class="text-sm break-all">{{ extension_info.path }}</span>
+                </div>
+                <div>
+                    <span class="w-24 text-sm opacity-70">Dependencies:</span>
+                    <div class="mt-1">
+                        {% if extension_info.dependencies %}
+                            <ul class="list-disc list-inside text-sm ml-2">
+                                {% for dep in extension_info.dependencies %}
+                                    <li>{{ dep }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="text-sm">No dependencies</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex space-x-4">
+        <button 
+            id="toggle-btn"
+            class="btn {% if extension_info.active %}btn-error{% else %}btn-success{% endif %}" 
+            data-action="{{ 'disable' if extension_info.active else 'enable' }}"
+            data-name="{{ extension_info.name }}">
+            {{ "Disable" if extension_info.active else "Enable" }}
+        </button>
+        <button 
+            id="uninstall-btn"
+            class="btn btn-error"
+            data-name="{{ extension_info.name }}">
+            Uninstall
+        </button>
+    </div>
+</div>
+
+{% if extension_info.settings %}
+<div class="card p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4">Settings</h2>
+    <form id="settings-form" class="space-y-4">
+        {% for key, setting in extension_info.settings.items() %}
+            <div class="mb-4">
+                <label for="setting-{{ key }}" class="block text-sm font-medium mb-1">
+                    {{ setting.name }}
+                </label>
+                
+                {% if setting.type == "bool" %}
+                    <div class="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            id="setting-{{ key }}" 
+                            name="{{ key }}" 
+                            class="form-checkbox h-5 w-5" 
+                            {% if setting.value == true %}checked{% endif %}
+                        >
+                        <label for="setting-{{ key }}" class="ml-2 text-sm">
+                            {{ setting.description }}
+                        </label>
+                    </div>
+                {% elif setting.options %}
+                    <select 
+                        id="setting-{{ key }}" 
+                        name="{{ key }}" 
+                        class="form-select"
+                    >
+                        {% for option in setting.options %}
+                            <option 
+                                value="{{ option.value }}" 
+                                {% if setting.value == option.value %}selected{% endif %}
+                            >
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs opacity-70 mt-1">{{ setting.description }}</p>
+                {% else %}
+                    <input 
+                        type="{{ 'password' if 'password' in key or 'key' in key else 'text' }}" 
+                        id="setting-{{ key }}" 
+                        name="{{ key }}" 
+                        class="form-input" 
+                        value="{{ setting.value }}"
+                    >
+                    <p class="text-xs opacity-70 mt-1">{{ setting.description }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div>
+            <button type="submit" class="btn btn-success">Save Settings</button>
+            <span id="settings-status" class="ml-2"></span>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% if extension_instance %}
+<div class="card p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4">Extension Details</h2>
+    
+    {% if extension_instance.type == "ui" %}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">UI Components</h3>
+            {% if extension_instance.components %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-sm font-medium py-2">Component ID</th>
+                                <th class="text-left text-sm font-medium py-2">Mount Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for id, component in extension_instance.components.items() %}
+                                <tr>
+                                    <td class="py-2 text-sm">{{ id }}</td>
+                                    <td class="py-2 text-sm">
+                                        {% for mount_point, components in extension_instance.mount_points.items() %}
+                                            {% if id in components %}
+                                                <span class="inline-block bg-gray-200 dark:bg-gray-700 rounded px-2 py-1 text-xs mr-1 mb-1">{{ mount_point }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-sm">No UI components registered.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    {% if extension_instance.type == "api" %}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">API Routes</h3>
+            {% if extension_instance.routes %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-sm font-medium py-2">Path</th>
+                                <th class="text-left text-sm font-medium py-2">Methods</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in extension_instance.routes %}
+                                <tr>
+                                    <td class="py-2 text-sm">{{ route.path }}</td>
+                                    <td class="py-2 text-sm">
+                                        {% for method in route.methods %}
+                                            <span class="inline-block bg-gray-200 dark:bg-gray-700 rounded px-2 py-1 text-xs mr-1 mb-1">{{ method }}</span>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-sm">No API routes registered.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    {% if extension_instance.type == "tool" %}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Tools</h3>
+            {% if extension_instance.tools %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-sm font-medium py-2">Tool ID</th>
+                                <th class="text-left text-sm font-medium py-2">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for id, tool in extension_instance.tools.items() %}
+                                <tr>
+                                    <td class="py-2 text-sm">{{ id }}</td>
+                                    <td class="py-2 text-sm">{{ tool.__doc__|default('No description') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-sm">No tools registered.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    {% if extension_instance.type == "model" %}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Model Information</h3>
+            <p class="text-sm">This extension adds a new AI model to Open WebUI.</p>
+        </div>
+    {% endif %}
+    
+    {% if extension_instance.type == "theme" %}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium mb-2">Theme Information</h3>
+            <p class="text-sm">Theme Name: {{ extension_instance.theme_name }}</p>
+            <p class="text-sm mt-2">This extension adds a new theme to Open WebUI.</p>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if extension_info.error %}
+<div class="card p-6 mb-8 bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700">
+    <h2 class="text-xl font-semibold mb-4 text-red-800 dark:text-red-200">Error</h2>
+    <pre class="text-sm p-4 bg-white dark:bg-gray-800 rounded overflow-x-auto">{{ extension_info.error }}</pre>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle extension (enable/disable)
+    document.getElementById('toggle-btn').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const action = button.dataset.action;
+        const name = button.dataset.name;
+        const originalText = button.textContent.trim();
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="loading mr-2"></span> Processing...';
+        
+        try {
+            const response = await fetch(`/api/extensions/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Refresh the page to show updated state
+                window.location.reload();
+            } else {
+                alert(`Error: ${data.message}`);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    });
+    
+    // Uninstall extension
+    document.getElementById('uninstall-btn').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const name = button.dataset.name;
+        
+        // Confirm
+        if (!confirm(`Are you sure you want to uninstall ${name}? This action cannot be undone.`)) {
+            return;
+        }
+        
+        const originalText = button.textContent.trim();
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<span class="loading mr-2"></span> Uninstalling...';
+        
+        try {
+            const response = await fetch('/api/extensions/uninstall', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Redirect back to extensions list
+                window.location.href = '/admin/extensions';
+            } else {
+                alert(`Error: ${data.message}`);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    });
+    
+    // Save settings
+    const settingsForm = document.getElementById('settings-form');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const submitButton = event.submitter;
+            const statusEl = document.getElementById('settings-status');
+            const originalText = submitButton.textContent.trim();
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="loading mr-2"></span> Saving...';
+            statusEl.textContent = '';
+            
+            // Collect form data
+            const formData = new FormData(settingsForm);
+            const settings = {};
+            
+            formData.forEach((value, key) => {
+                // Convert checkboxes to boolean
+                if (settingsForm.elements[key].type === 'checkbox') {
+                    settings[key] = settingsForm.elements[key].checked;
+                } else {
+                    settings[key] = value;
+                }
+            });
+            
+            try {
+                const response = await fetch('/api/extensions/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: '{{ extension_info.name }}',
+                        settings: settings
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusEl.textContent = 'Settings saved successfully!';
+                    // Reset button after a short delay
+                    setTimeout(() => {
+                        submitButton.textContent = originalText;
+                        submitButton.disabled = false;
+                    }, 1000);
+                } else {
+                    statusEl.textContent = `Error: ${data.message}`;
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        });
+    }
+</script>
+{% endblock %}
